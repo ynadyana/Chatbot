@@ -5,7 +5,7 @@ LappyBot is a **web-based assistant** that helps users quickly understand **lapt
 ---
 
 ## UI Preview
-<img src="screenshots/ui/ui-main.png" width="780" alt="LappyBot main UI" />
+<img src="ui/ui-main.png" alt="LappyBot main UI" width="900">
 
 ---
 
