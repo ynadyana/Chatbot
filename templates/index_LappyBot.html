@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LappyBot - Your Laptop Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Roboto+Slab:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            background-image: url('{{ url_for('static', filename='bg.png') }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #e0e0e0;
+        }
+
+        header {
+            background-color: #301934;
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border-radius: 10px;
+            margin: 10px auto;
+            max-width: 95%;
+            font-family: 'Roboto Slab', serif;
+        }
+
+        header img {
+            width: 100px;
+            height: auto;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.0rem;
+        }
+
+        header p {
+            margin: 5px 0;
+            font-size: 1.0rem;
+        }
+
+        #chatbox {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(220, 200, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(155, 120, 255, 0.4);
+        }
+
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background: rgba(245, 235, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            line-height: 1.4;
+            margin-bottom:0;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: rgba(190, 150, 255, 0.9);
+            color: white;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: rgba(220, 190, 255, 0.9);
+            color: #4a4a4a;
+            margin-bottom:0;
+            margin-top:0;
+        }
+
+        .bot-message img {
+            display: block;
+            max-width: 60%;
+            height: auto;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .bot-message img:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        #user-input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(190, 150, 255, 0.8);
+            background-color: rgba(245, 235, 255, 0.9);
+            color: #4a4a4a;
+            font-size: 1rem;
+        }
+
+        #user-input:focus {
+            outline: none;
+            border-color: rgba(160, 120, 255, 0.9);
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: rgba(190, 150, 255, 0.9);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: rgba(160, 120, 255, 0.9);
+        }
+
+        .voice-btn {
+            background-color: #ff9800;
+            margin-left: 10px;
+        }
+
+        .voice-btn:hover {
+            background-color: #e68900;
+        }
+
+        ::placeholder {
+            color: rgba(150, 150, 180, 0.8);
+        }
+
+        #bot-gif {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 100px;
+            height: auto;
+            z-index: 1000;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='lappybotlogo(2).png') }}" alt="LappyBot Logo">
+        <div>
+            <h1>Welcome to LappyBot!</h1>
+            <p>Your friendly assistant for laptops: recommendations, comparisons, and troubleshooting.</p>
+        </div>
+    </header>
+    <div id="chatbox">
+        <div id="messages"></div>
+        <div style="display: flex;">
+            <input type="text" id="user-input" placeholder="Ask me anything about laptops..." autocomplete="off" onkeypress="handleEnter(event)">
+            <button onclick="sendMessage()">Send</button>
+            <button class="voice-btn" onclick="startVoiceInput()">🎤</button>
+        </div>
+    </div>
+    <img src="{{ url_for('static', filename='botgif.gif') }}" alt="Bot Animation" id="bot-gif">
+    <script>
+        function sendMessage() {
+        const userInput = document.getElementById("user-input").value.trim();
+        if (!userInput) return;
+
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.innerHTML += `<div class="message user-message">${userInput}</div>`;
+
+        // Show loading message while waiting for the bot's response
+        messagesDiv.innerHTML += `<div class="loading" style="color: black;">LappyBot is thinking...</div>`;
+
+        // Clear input box
+        document.getElementById("user-input").value = "";
+
+        fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userInput })
+        })
+        .then(response => response.json())
+        .then(data => {
+            let botResponse = data.response;
+
+            // Ensure botResponse is a valid string
+            if (typeof botResponse !== "string") {
+                console.error("Invalid bot response format:", botResponse);
+                return;
+            }
+
+            // If the response contains the comparison table, isolate and clean it
+            if (botResponse.includes('<table>')) {
+                // Extract the table part of the response
+                let tableStart = botResponse.indexOf('<table>');
+                let tableEnd = botResponse.indexOf('</table>') + '</table>'.length;
+
+                let tableHtml = botResponse.substring(tableStart, tableEnd);
+
+                // Clean the table HTML (remove unwanted <br> tags within the table only)
+                tableHtml = tableHtml.replace(/<br>/g, '');  // Removing <br> tags
+
+                // Replace the table part in the bot response with the cleaned table HTML
+                botResponse = botResponse.replace(botResponse.substring(tableStart, tableEnd), tableHtml);
+            }
+
+            // Remove the loading message
+            messagesDiv.innerHTML = messagesDiv.innerHTML.replace(`<div class="loading">LappyBot is thinking...</div>`, '');
+
+            // Add bot's response
+            if (botResponse.includes("Here is the image for")) {
+                const imageUrl = botResponse.split(": ")[1];
+                const laptopName = botResponse.split("image for")[1].split(":")[0].trim();
+
+                messagesDiv.innerHTML +=
+                    `<div class="bot-message">
+                    <p>Here is the image for ${laptopName}:</p>
+                    <a href="${imageUrl}" target="_blank">
+                        <img src="${imageUrl}" alt="${laptopName}" class="image-display"/>
+                    </a>
+                    </div>`;
+            } else {
+                messagesDiv.innerHTML += `<div class="bot-message">${botResponse}</div>`;
+            }
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            messagesDiv.innerHTML += `<div class="message bot-message">Oops! Something went wrong. Please try again.</div>`;
+        });
+
+        document.getElementById("user-input").value = "";
+    }
+
+
+        function startVoiceInput() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Your browser doesn't support voice input.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            recognition.start();
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById("user-input").value = transcript;
+                sendMessage();
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Voice recognition error:', event.error);
+            };
+        }
+
+        function handleEnter(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+    </script>
+</body>
+</html>
